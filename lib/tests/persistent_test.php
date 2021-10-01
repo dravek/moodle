@@ -79,13 +79,13 @@ class core_persistent_testcase extends advanced_testcase {
 
         $table = new xmldb_table(core_testable_second_persistent::TABLE);
         $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
-        $table->add_field('int', XMLDB_TYPE_INTEGER, '10', null, null, null, null);
-        $table->add_field('intnull', XMLDB_TYPE_INTEGER, '10', null, null, null, null);
-        $table->add_field('float', XMLDB_TYPE_FLOAT, '10', null, null, null, null);
-        $table->add_field('text', XMLDB_TYPE_TEXT, null, null, null, null, null);
-        $table->add_field('raw', XMLDB_TYPE_CHAR, '100', null, null, null, null);
-        $table->add_field('booltrue', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, '0');
-        $table->add_field('boolfalse', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, '0');
+        $table->add_field('intfield', XMLDB_TYPE_INTEGER, '10', null, null, null, null);
+        $table->add_field('intnullfield', XMLDB_TYPE_INTEGER, '10', null, null, null, null);
+        $table->add_field('floatfield', XMLDB_TYPE_FLOAT, '10,5', null, null, null, null);
+        $table->add_field('textfield', XMLDB_TYPE_TEXT, null, null, null, null, null);
+        $table->add_field('rawfield', XMLDB_TYPE_CHAR, '100', null, null, null, null);
+        $table->add_field('booltruefield', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, '0');
+        $table->add_field('boolfalsefield', XMLDB_TYPE_INTEGER, '1', null, XMLDB_NOTNULL, null, '0');
         $table->add_field('timecreated', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
         $table->add_field('timemodified', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
         $table->add_field('usermodified', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
@@ -475,35 +475,35 @@ class core_persistent_testcase extends advanced_testcase {
 
     public function test_get(): void {
         $data = [
-            'int' => 123,
-            'intnull' => null,
-            'float' => 33.44,
-            'text' => 'Hello',
-            'raw' => '/dev/hello',
-            'booltrue' => true,
-            'boolfalse' => false,
+            'intfield' => 123,
+            'intnullfield' => null,
+            'floatfield' => 33.44,
+            'textfield' => 'Hello',
+            'rawfield' => '/dev/hello',
+            'booltruefield' => true,
+            'boolfalsefield' => false,
         ];
         $p = new core_testable_second_persistent(0, (object)$data);
         $p->create();
 
-        $this->assertSame($data['intnull'], $p->get('intnull'));
-        $this->assertSame($data['int'], $p->get('int'));
-        $this->assertSame($data['float'], $p->get('float'));
-        $this->assertSame($data['text'], $p->get('text'));
-        $this->assertSame($data['raw'], $p->get('raw'));
-        $this->assertSame($data['booltrue'], $p->get('booltrue'));
-        $this->assertSame($data['boolfalse'], $p->get('boolfalse'));
+        $this->assertSame($data['intnullfield'], $p->get('intnullfield'));
+        $this->assertSame($data['intfield'], $p->get('intfield'));
+        $this->assertSame($data['floatfield'], $p->get('floatfield'));
+        $this->assertSame($data['textfield'], $p->get('textfield'));
+        $this->assertSame($data['rawfield'], $p->get('rawfield'));
+        $this->assertSame($data['booltruefield'], $p->get('booltruefield'));
+        $this->assertSame($data['boolfalsefield'], $p->get('boolfalsefield'));
 
         // Ensure that types are correct after reloading data from database.
         $p->read();
 
-        $this->assertSame($data['int'], $p->get('int'));
-        $this->assertSame($data['intnull'], $p->get('intnull'));
-        $this->assertSame($data['float'], $p->get('float'));
-        $this->assertSame($data['text'], $p->get('text'));
-        $this->assertSame($data['raw'], $p->get('raw'));
-        $this->assertSame($data['booltrue'], $p->get('booltrue'));
-        $this->assertSame($data['boolfalse'], $p->get('boolfalse'));
+        $this->assertSame($data['intfield'], $p->get('intfield'));
+        $this->assertSame($data['intnullfield'], $p->get('intnullfield'));
+        $this->assertSame($data['floatfield'], $p->get('floatfield'));
+        $this->assertSame($data['textfield'], $p->get('textfield'));
+        $this->assertSame($data['rawfield'], $p->get('rawfield'));
+        $this->assertSame($data['booltruefield'], $p->get('booltruefield'));
+        $this->assertSame($data['boolfalsefield'], $p->get('boolfalsefield'));
     }
 }
 
@@ -627,29 +627,29 @@ class core_testable_second_persistent extends \core\persistent {
      */
     protected static function define_properties(): array {
         return [
-            'int' => [
+            'intfield' => [
                 'type' => PARAM_INT,
             ],
-            'intnull' => [
+            'intnullfield' => [
                 'type' => PARAM_INT,
                 'null' => NULL_ALLOWED,
                 'default' => null,
             ],
-            'float' => [
+            'floatfield' => [
                 'type' => PARAM_FLOAT,
             ],
-            'text' => [
+            'textfield' => [
                 'type' => PARAM_TEXT,
                 'default' => ''
             ],
-            'raw' => [
+            'rawfield' => [
                 'type' => PARAM_RAW,
                 'default' => ''
             ],
-            'booltrue' => [
+            'booltruefield' => [
                 'type' => PARAM_BOOL,
             ],
-            'boolfalse' => [
+            'boolfalsefield' => [
                 'type' => PARAM_BOOL,
             ]
         ];
