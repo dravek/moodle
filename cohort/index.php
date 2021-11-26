@@ -23,6 +23,7 @@
  */
 
 use core_cohort\local\systemreports\cohorts;
+use core_reportbuilder\local\filters\text;
 use core_reportbuilder\system_report_factory;
 
 require('../config.php');
@@ -91,6 +92,15 @@ if ($editcontrols = cohort_edit_controls($context, $baseurl)) {
 
 $reportparams = ['contextid' => $contextid, 'showall' => $showall];
 $report = system_report_factory::create(cohorts::class, context_system::instance(), '', '', 0, $reportparams);
+
+// Check if it needs to search by name.
+if (!empty($searchquery)) {
+    $report->set_filter_values([
+        'cohort:name_operator' => text::CONTAINS,
+        'cohort:name_value' => $searchquery,
+    ]);
+}
+
 echo $report->output();
 
 echo $OUTPUT->footer();
