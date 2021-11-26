@@ -232,4 +232,14 @@ class cohorts extends system_report {
                 return has_capability('moodle/cohort:assign', context::instance_by_id($row->contextid));
             }));
     }
+
+    /**
+     * CSS class for the row
+     *
+     * @param stdClass $row
+     * @return string
+     */
+    public function get_row_class(stdClass $row): string {
+        return (!$row->visible) ? 'dimmed_text' : '';
+    }
 }
