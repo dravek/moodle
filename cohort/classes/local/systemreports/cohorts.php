@@ -57,6 +57,7 @@ class cohorts extends system_report {
 
     protected function can_view(): bool {
         // TODO: Implement can_view() method.
+        return true;
     }
 
     /**
