@@ -89,7 +89,7 @@ if ($editcontrols = cohort_edit_controls($context, $baseurl)) {
     echo $OUTPUT->render($editcontrols);
 }
 
-$reportparams = ['contextid' => $contextid];
+$reportparams = ['contextid' => $contextid, 'showall' => $showall];
 $report = system_report_factory::create(cohorts::class, context_system::instance(), '', '', 0, $reportparams);
 echo $report->output();
 

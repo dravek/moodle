@@ -16,11 +16,14 @@
 
 namespace core_cohort\local\systemreports;
 
+use context;
 use core_cohort\local\entities\cohort;
 use core_reportbuilder\local\helpers\database;
 use core_reportbuilder\local\report\column;
 use core_reportbuilder\system_report;
+use html_writer;
 use lang_string;
+use moodle_url;
 use stdClass;
 
 /**
@@ -68,8 +71,28 @@ class cohorts extends system_report {
      */
     public function add_columns(): void {
         $entitymainalias = $this->entitymain->get_table_alias('cohort');
+        $showall = $this->get_parameter('showall', null, PARAM_INT);
 
-        // TODO Category column.
+        // Category column.
+        if (!empty($showall) && $showall === 1) {
+            $this->add_column(new column(
+                'context',
+                new lang_string('category'),
+                $this->entitymain->get_entity_name()
+            ))
+                ->set_type(column::TYPE_INTEGER)
+                ->add_fields("{$entitymainalias}.contextid")
+                ->set_is_sortable(true)
+                ->add_callback(static function (int $contextid, stdClass $cohort): string {
+                    $cohortcontext = context::instance_by_id($cohort->contextid);
+                    if ($cohortcontext->contextlevel === CONTEXT_COURSECAT) {
+                        return html_writer::link(new moodle_url('/cohort/index.php',
+                            ['contextid' => $cohort->contextid]), $cohortcontext->get_context_name(false));
+                    }
+
+                    return $cohortcontext->get_context_name(false);
+                });
+        }
 
         // Name column using the inplace editable component.
         $this->add_column(new column(
