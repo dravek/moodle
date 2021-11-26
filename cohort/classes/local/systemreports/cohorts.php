@@ -58,6 +58,14 @@ class cohorts extends system_report {
 
         // Set if report can be downloaded.
         $this->set_downloadable(false);
+
+        // Check if report needs to show a specific category.
+        $contextid = $this->get_parameter('contextid', 0, PARAM_INT);
+        $showall = $this->get_parameter('showall', true, PARAM_BOOL);
+        if (empty($showall) || $showall === 0) {
+            $paramcontextid = database::generate_param_name();
+            $this->add_base_condition_sql("{$entitymainalias}.contextid = :$paramcontextid", [$paramcontextid => $contextid]);
+        }
     }
 
     protected function can_view(): bool {
