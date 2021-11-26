@@ -17,7 +17,11 @@
 namespace core_cohort\local\systemreports;
 
 use core_cohort\local\entities\cohort;
+use core_reportbuilder\local\helpers\database;
+use core_reportbuilder\local\report\column;
 use core_reportbuilder\system_report;
+use lang_string;
+use stdClass;
 
 /**
  * Cohorts system report class implementation
@@ -62,7 +66,68 @@ class cohorts extends system_report {
      * unique identifier. If custom columns are needed just for this report, they can be defined here.
      */
     public function add_columns(): void {
-        // TODO.
+        $entitymainalias = $this->entitymain->get_table_alias('cohort');
+
+        // TODO Category column.
+
+        // Name column using the inplace editable component.
+        $this->add_column(new column(
+            'editablename',
+            new lang_string('name', 'core_cohort'),
+            $this->entitymain->get_entity_name()
+        ))
+            ->set_type(column::TYPE_TEXT)
+            ->set_is_sortable(true)
+            ->add_fields("{$entitymainalias}.name, {$entitymainalias}.id, {$entitymainalias}.contextid")
+            ->add_callback(static function(string $name, stdClass $cohort): string {
+                global $OUTPUT, $PAGE;
+                $renderer = $PAGE->get_renderer('core');
+
+                $template = new \core_cohort\output\cohortname($cohort);
+                return $renderer->render_from_template('core/inplace_editable', $template->export_for_template($OUTPUT));
+            });
+
+        // ID Number column using the inplace editable component.
+        $this->add_column(new column(
+            'editableidnumber',
+            new lang_string('idnumber', 'core_cohort'),
+            $this->entitymain->get_entity_name()
+        ))
+            ->set_type(column::TYPE_TEXT)
+            ->set_is_sortable(true)
+            ->add_fields("{$entitymainalias}.idnumber, {$entitymainalias}.id, {$entitymainalias}.contextid")
+            ->add_callback(static function(string $idnumber, stdClass $cohort): string {
+                global $OUTPUT, $PAGE;
+                $renderer = $PAGE->get_renderer('core');
+
+                $template = new \core_cohort\output\cohortidnumber($cohort);
+                return $renderer->render_from_template('core/inplace_editable', $template->export_for_template($OUTPUT));
+            });
+
+        // Description column.
+        $this->add_column_from_entity('cohort:description');
+
+        // Cohort size column using a custom SQL query to count cohort members.
+        $cm = database::generate_param_name();
+        $sql = "(SELECT count($cm.id) as memberscount
+                FROM {cohort_members} $cm
+                WHERE $cm.cohortid = {$entitymainalias}.id)";
+        $this->add_column(new column(
+            'memberscount',
+            new lang_string('memberscount', 'cohort'),
+            $this->entitymain->get_entity_name()
+        ))
+            ->set_type(column::TYPE_INTEGER)
+            ->set_is_sortable(true)
+            ->add_field($sql, 'memberscount');
+
+        // Component column.
+        $this->add_column_from_entity('cohort:component');
+
+        // It's possible to override the display name of a column, if you don't want to use the value provided by the entity.
+        if ($column = $this->get_column('cohort:component')) {
+            $column->set_title(new lang_string('source', 'core_plugin'));
+        }
     }
 
     /**
