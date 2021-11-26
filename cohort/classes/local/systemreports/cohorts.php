@@ -19,11 +19,13 @@ namespace core_cohort\local\systemreports;
 use context;
 use core_cohort\local\entities\cohort;
 use core_reportbuilder\local\helpers\database;
+use core_reportbuilder\local\report\action;
 use core_reportbuilder\local\report\column;
 use core_reportbuilder\system_report;
 use html_writer;
 use lang_string;
 use moodle_url;
+use pix_icon;
 use stdClass;
 
 /**
@@ -47,7 +49,7 @@ class cohorts extends system_report {
         $this->add_entity($this->entitymain);
 
         // Any columns required by actions should be defined here to ensure they're always available.
-        $this->add_base_fields("{$entitymainalias}.id");
+        $this->add_base_fields("{$entitymainalias}.id, {$entitymainalias}.contextid, {$entitymainalias}.visible");
 
         // Now we can call our helper methods to add the content we want to include in the report.
         $this->add_columns();
@@ -174,6 +176,49 @@ class cohorts extends system_report {
      * Note the use of ":id" placeholder which will be substituted according to actual values in the row
      */
     protected function add_actions(): void {
-        // TODO.
+
+        $contextid = $this->get_parameter('contextid', 0, PARAM_INT);
+        $showall = $this->get_parameter('showall', true, PARAM_BOOL);
+        $returnurl = new moodle_url('/cohort/index.php', ['id' => ':id', 'contextid' => $contextid, 'showall' => $showall]);
+
+        // Hide action. It will be only shown if the property 'visible' is true and user has 'moodle/cohort:manage' capabillity.
+        $url = new moodle_url('/cohort/edit.php', ['id' => ':id', 'sesskey' => sesskey(), 'hide' => 1, 'returnurl' => $returnurl]);
+        $icon = new pix_icon('t/hide', get_string('hide'));
+        $this->add_action((new action($url, $icon))
+            ->add_callback(static function(stdClass $row) {
+                return $row->visible && has_capability('moodle/cohort:manage', context::instance_by_id($row->contextid));
+            }));
+
+        // Show action. It will be only shown if the property 'visible' is false and user has 'moodle/cohort:manage' capabillity.
+        $url = new moodle_url('/cohort/edit.php', ['id' => ':id', 'sesskey' => sesskey(), 'show' => 1, 'returnurl' => $returnurl]);
+        $icon = new pix_icon('t/show', get_string('show'));
+        $this->add_action((new action($url, $icon))
+            ->add_callback(static function(stdClass $row): bool {
+                return !$row->visible && has_capability('moodle/cohort:manage', context::instance_by_id($row->contextid));
+            }));
+
+        // Edit action. It will be only shown if user has 'moodle/cohort:manage' capabillity.
+        $url = new moodle_url('/cohort/edit.php', ['id' => ':id', 'returnurl' => $returnurl]);
+        $icon = new pix_icon('t/edit', get_string('edit'));
+        $this->add_action((new action($url, $icon))
+            ->add_callback(static function(stdClass $row): bool {
+                return has_capability('moodle/cohort:manage', context::instance_by_id($row->contextid));
+            }));
+
+        // Delete action. It will be only shown if user has 'moodle/cohort:manage' capabillity.
+        $url = new moodle_url('/cohort/edit.php', ['id' => ':id', 'delete' => 1, 'returnurl' => $returnurl]);
+        $icon = new pix_icon('t/delete', get_string('delete'));
+        $this->add_action((new action($url, $icon))
+            ->add_callback(static function(stdClass $row): bool {
+                return has_capability('moodle/cohort:manage', context::instance_by_id($row->contextid));
+            }));
+
+        // Assign members to cohort action. It will be only shown if user has 'moodle/cohort:assign' capabillity.
+        $url = new moodle_url('/cohort/assign.php', ['id' => ':id', 'returnurl' => $returnurl]);
+        $icon = new pix_icon('i/users', get_string('assign', 'core_cohort'));
+        $this->add_action((new action($url, $icon))
+            ->add_callback(static function(stdClass $row): bool {
+                return has_capability('moodle/cohort:assign', context::instance_by_id($row->contextid));
+            }));
     }
 }
