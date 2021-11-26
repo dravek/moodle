@@ -31,7 +31,6 @@ require_once($CFG->dirroot.'/cohort/lib.php');
 require_once($CFG->libdir.'/adminlib.php');
 
 $contextid = optional_param('contextid', 0, PARAM_INT);
-$page = optional_param('page', 0, PARAM_INT);
 $searchquery  = optional_param('search', '', PARAM_RAW);
 $showall = optional_param('showall', false, PARAM_BOOL);
 
@@ -73,6 +72,7 @@ if ($category) {
 }
 
 echo $OUTPUT->header();
+echo $OUTPUT->heading($context->get_context_name());
 
 $params = [];
 if ($contextid) {
