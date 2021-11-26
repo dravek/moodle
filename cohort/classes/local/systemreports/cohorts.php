@@ -61,8 +61,19 @@ class cohorts extends system_report {
     }
 
     protected function can_view(): bool {
-        // TODO: Implement can_view() method.
-        return true;
+        $contextid = $this->get_parameter('contextid', 1, PARAM_INT);
+        $context = context::instance_by_id($contextid);
+
+        return has_any_capability(['moodle/cohort:manage', 'moodle/cohort:view'], $context);
+    }
+
+    /**
+     * Get the visible name of the report
+     *
+     * @return string
+     */
+    public static function get_name(): string {
+        return get_string('cohorts', 'core_cohort');
     }
 
     /**
