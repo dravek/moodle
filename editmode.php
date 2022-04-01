@@ -26,6 +26,7 @@ require_once('config.php');
 
 $setmode = optional_param('setmode', false, PARAM_BOOL);
 $contextid = required_param('context', PARAM_INT);
+$pagetype = required_param('pagetype', PARAM_ALPHANUMEXT);
 $pageurl = required_param('pageurl', PARAM_LOCALURL);
 
 require_sesskey();
@@ -34,8 +35,19 @@ require_login();
 $context = \context_helper::instance_by_id($contextid);
 $PAGE->set_context($context);
 
-if ($context->id === \context_user::instance($USER->id)->id) {
-    $PAGE->set_blocks_editing_capability('moodle/my:manageblocks');
+if ($context instanceof \context_user) {
+    $currentuser = $context->instanceid === $USER->id;
+
+    if ($pagetype === 'my-index') {
+        // User dashboard page.
+        $PAGE->set_blocks_editing_capability('moodle/my:manageblocks');
+    } else if ($currentuser) {
+        // User profile page for the current user.
+        $PAGE->set_blocks_editing_capability('moodle/user:manageownblocks');
+    } else {
+        // User profile page for another user.
+        $PAGE->set_blocks_editing_capability('moodle/user:manageblocks');
+    }
 }
 
 if ($PAGE->user_allowed_editing()) {

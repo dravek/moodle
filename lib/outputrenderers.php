@@ -2851,6 +2851,7 @@ EOD;
             $temp = (object) [
                 'legacyseturl' => (new moodle_url('/editmode.php'))->out(false),
                 'pagecontextid' => $this->page->context->id,
+                'pagetype' => $this->page->pagetype,
                 'pageurl' => $this->page->url,
                 'sesskey' => sesskey(),
             ];

@@ -30,6 +30,11 @@ use external_function_parameters;
 use external_single_structure;
 use external_value;
 
+defined('MOODLE_INTERNAL') || die();
+
+global $CFG;
+require_once("{$CFG->libdir}/externallib.php");
+
 /**
  * Web service to change the edit mode.
  *
@@ -48,7 +53,8 @@ class editmode extends external_api {
         return new external_function_parameters(
             [
                 'setmode' => new external_value(PARAM_BOOL, 'Set edit mode to'),
-                'context' => new external_value(PARAM_INT, 'Page context id')
+                'context' => new external_value(PARAM_INT, 'Page context id'),
+                'pagetype' => new external_value(PARAM_ALPHANUMEXT, 'Set page type')
             ]
         );
     }
@@ -58,16 +64,18 @@ class editmode extends external_api {
      *
      * @param bool $setmode the current edit mode
      * @param int $contextid the current page context id
+     * @param string $pagetype the current page type
      * @return array the new edit mode.
      */
-    public static function change_editmode(bool $setmode, int $contextid): array {
+    public static function change_editmode(bool $setmode, int $contextid, string $pagetype = ''): array {
         global $USER, $PAGE;
 
         $params = self::validate_parameters(
             self::change_editmode_parameters(),
             [
                 'setmode' => $setmode,
-                'context' => $contextid
+                'context' => $contextid,
+                'pagetype' => $pagetype
             ]
         );
 
@@ -75,8 +83,19 @@ class editmode extends external_api {
         self::validate_context($context);
         $PAGE->set_context($context);
 
-        if ($context->id === \context_user::instance($USER->id)->id) {
-            $PAGE->set_blocks_editing_capability('moodle/my:manageblocks');
+        if ($context instanceof \context_user) {
+            $currentuser = $context->instanceid === $USER->id;
+
+            if ($pagetype === 'my-index') {
+                // User dashboard page.
+                $PAGE->set_blocks_editing_capability('moodle/my:manageblocks');
+            } else if ($currentuser) {
+                // User profile page for the current user.
+                $PAGE->set_blocks_editing_capability('moodle/user:manageownblocks');
+            } else {
+                // User profile page for another user.
+                $PAGE->set_blocks_editing_capability('moodle/user:manageblocks');
+            }
         }
 
         $success = false;
