@@ -33,6 +33,7 @@ import * as reportEvents from 'core_reportbuilder/local/events';
 import * as reportSelectors from 'core_reportbuilder/local/selectors';
 import {deleteReport} from 'core_reportbuilder/local/repository/reports';
 import {createReportModal} from 'core_reportbuilder/local/repository/modals';
+import ModalForm from "core_form/modalform";
 
 /**
  * Initialise module
@@ -114,6 +115,23 @@ export const init = () => {
             }).catch(() => {
                 return;
             });
+        }
+
+        const reportDuplicate = event.target.closest(reportSelectors.actions.reportDuplicate);
+        if (reportDuplicate) {
+            event.preventDefault();
+
+            const modal = new ModalForm({
+                formClass: 'core_reportbuilder\\form\\duplicate_report',
+                args: {'reportid': reportDuplicate.dataset.reportId, 'reportname': reportDuplicate.dataset.reportName},
+                modalConfig: {title: getString('duplicatereport', 'core_reportbuilder'), scrollable: false},
+            });
+
+            modal.addEventListener(modal.events.FORM_SUBMITTED, (event) => {
+                window.location.href = event.detail;
+            });
+
+            return modal.show();
         }
     });
 };
