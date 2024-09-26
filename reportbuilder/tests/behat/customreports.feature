@@ -342,3 +342,32 @@ Feature: Manage custom reports
       | Javascript Object Notation (.json) |
       | OpenDocument (.ods)                |
       | Portable Document Format (.pdf)    |
+
+  Scenario: Duplicate a custom report
+    Given the following "core_reportbuilder > Report" exists:
+      | name    | My report                                |
+      | source  | core_user\reportbuilder\datasource\users |
+      | default | 1                                        |
+    And the following "core_reportbuilder > Audience" exists:
+      | report     | My report                                          |
+      | classname  | core_reportbuilder\reportbuilder\audience\allusers |
+      | configdata |                                                    |
+    And the following "core_reportbuilder > Schedule" exists:
+      | report | My report   |
+      | name   | My schedule |
+    When I log in as "admin"
+    And I navigate to "Reports > Report builder > Custom reports" in site administration
+    And I press "Duplicate report" action in the "My report" report row
+    Then I should see "Edit report name" in the "Duplicate report" "dialogue"
+    And I set the following fields in the "Duplicate report" "dialogue" to these values:
+      | Edit report name | My duplicated report |
+      | Audiences        | 1                    |
+      | Schedules        | 1                    |
+    And I click on "Save changes" "button" in the "Duplicate report" "dialogue"
+    And I should see "Full name" in the ".reportbuilder-report-container" "css_element"
+    And I should see "Username" in the ".reportbuilder-report-container" "css_element"
+    And I should see "Email address" in the ".reportbuilder-report-container" "css_element"
+    And I click on the "Audience" dynamic tab
+    And I should see "All site users"
+    And I click on the "Schedules" dynamic tab
+    And I should see "My schedule"

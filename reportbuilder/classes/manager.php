@@ -22,7 +22,8 @@ use core_collator;
 use core_component;
 use core_plugin_manager;
 use stdClass;
-use core_reportbuilder\local\models\report;
+use core_reportbuilder\event\report_created;
+use core_reportbuilder\local\models\{audience, column, filter, report, schedule};
 use core_reportbuilder\local\report\base;
 use core_reportbuilder\exception\{source_invalid_exception, source_unavailable_exception};
 
@@ -168,5 +169,88 @@ class manager {
 
         return (!empty($CFG->customreportslimit) &&
             (int) $CFG->customreportslimit <= report::count_records(['type' => base::TYPE_CUSTOM_REPORT]));
+    }
+
+    /**
+     * Duplicate an existing report with audiences and schedules.
+     *
+     * @param report $originalreport The report to duplicate.
+     * @param string $reportname
+     * @param bool $audiences
+     * @param bool $schedules
+     * @return report The duplicated report.
+     */
+    public static function duplicate_report(report $originalreport, string $reportname, bool $audiences, bool $schedules): report {
+        // Create new report persistent.
+        $record = $originalreport->to_record();
+        unset($record->id);
+        $record->name = $reportname;
+        $report = self::create_report_persistent($record);
+
+        // Duplicate columns.
+        self::duplicate_content(column::class, $originalreport->get('id'), $report->get('id'));
+
+        // Duplicate conditions/filters.
+        self::duplicate_content(filter::class, $originalreport->get('id'), $report->get('id'));
+
+        // Duplicate audiences.
+        if ($audiences) {
+            $mapping = [];
+            foreach (audience::get_records(['reportid' => $originalreport->get('id')]) as $originalpersistent) {
+                $record = $originalpersistent->to_record();
+                unset($record->id);
+                $record->reportid = $report->get('id');
+                $newpersistent = new audience(0, $record);
+                $newpersistent->create();
+                $mapping[$originalpersistent->get('id')] = $newpersistent->get('id');
+            }
+
+            // Duplicate schedules and map them to the new audience ids.
+            if ($schedules) {
+                foreach (schedule::get_records(['reportid' => $originalreport->get('id')]) as $originalpersistent) {
+                    $record = $originalpersistent->to_record();
+                    unset($record->id);
+                    $record->reportid = $report->get('id');
+
+                    // Map new audience ids with the old ones.
+                    $originalaudiences = json_decode($record->audiences, true);
+                    $newaudiences = [];
+                    foreach ($originalaudiences as $audienceid) {
+                        $newaudiences[] = $mapping[$audienceid];
+                    }
+                    $record->audiences = json_encode($newaudiences);
+
+                    $newpersistent = new schedule(0, $record);
+                    $newpersistent->create();
+                }
+            }
+        }
+
+        // Copy report tags.
+        $tags = \core_tag_tag::get_item_tags_array('core_reportbuilder', 'reportbuilder_report', $originalreport->get('id'));
+        \core_tag_tag::set_item_tags('core_reportbuilder', 'reportbuilder_report', $report->get('id'), $report->get_context(),
+            $tags);
+
+        // Trigger event.
+        report_created::create_from_object($report)->trigger();
+
+        return $report;
+    }
+
+    /**
+     * Duplicate content from one persistent object to another.
+     *
+     * @param \core\persistent $persistent
+     * @param int $originalid The ID of the original persistent object.
+     * @param int $newid The ID of the new persistent object.
+     */
+    private static function duplicate_content(string $persistent, int $originalid, int $newid): void {
+        foreach ($persistent::get_records(['reportid' => $originalid]) as $originalpersistent) {
+            $record = $originalpersistent->to_record();
+            unset($record->id);
+            $record->reportid = $newid;
+            $newpersistent = new $persistent(0, $record);
+            $newpersistent->create();
+        }
     }
 }
