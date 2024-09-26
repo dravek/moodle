@@ -74,3 +74,19 @@ export const createScheduleModal = (triggerElement, modalTitle, reportId, schedu
         id: scheduleId,
     });
 };
+
+/**
+ * Return duplicate report modal instance
+ *
+ * @param {EventTarget} triggerElement
+ * @param {Promise} modalTitle
+ * @param {Number} reportId
+ * @param {String} reportName
+ * @return {ModalForm}
+ */
+export const createDuplicateModal = (triggerElement, modalTitle, reportId, reportName) => {
+    return createModalForm(triggerElement, modalTitle, 'core_reportbuilder\\form\\duplicate_report', {
+        id: reportId,
+        name: reportName,
+    });
+};

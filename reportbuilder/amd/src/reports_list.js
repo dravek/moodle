@@ -32,6 +32,7 @@ import {add as addToast} from 'core/toast';
 import * as reportEvents from 'core_reportbuilder/local/events';
 import * as reportSelectors from 'core_reportbuilder/local/selectors';
 import {deleteReport} from 'core_reportbuilder/local/repository/reports';
+import {createDuplicateModal} from 'core_reportbuilder/local/repository/modals';
 import {createReportModal} from 'core_reportbuilder/local/repository/modals';
 
 /**
@@ -114,6 +115,20 @@ export const init = () => {
             }).catch(() => {
                 return;
             });
+        }
+
+        const reportDuplicate = event.target.closest(reportSelectors.actions.reportDuplicate);
+        if (reportDuplicate) {
+            event.preventDefault();
+            const id = reportDuplicate.dataset.reportId;
+            const name = reportDuplicate.dataset.reportName;
+
+            const reportModal = createDuplicateModal(event.target, getString('duplicatereport', 'core_reportbuilder'), id, name);
+            reportModal.addEventListener(reportModal.events.FORM_SUBMITTED, event => {
+                window.location.href = event.detail;
+            });
+
+            reportModal.show();
         }
     });
 };

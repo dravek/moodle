@@ -23,8 +23,8 @@ use invalid_parameter_exception;
 use core\persistent;
 use core_reportbuilder\datasource;
 use core_reportbuilder\manager;
-use core_reportbuilder\local\models\column;
-use core_reportbuilder\local\models\filter;
+use core_reportbuilder\event\report_created;
+use core_reportbuilder\local\models\{audience, column, filter, schedule};
 use core_reportbuilder\local\models\report as report_model;
 use core_tag_tag;
 
@@ -445,5 +445,83 @@ class report {
         }
 
         return true;
+    }
+
+    /**
+     * Duplicate an existing report with audiences and schedules.
+     *
+     * @param report_model $originalreport The report to duplicate.
+     * @param string $reportname
+     * @param bool $audiences
+     * @param bool $schedules
+     * @return report_model The duplicated report.
+     */
+    public static function duplicate_report(report_model $originalreport, string $reportname, bool $audiences,
+        bool $schedules): report_model {
+
+        // Create new report.
+        $data = $originalreport->to_record();
+        unset($data->id);
+        $data->name = $reportname;
+        $data->tags = core_tag_tag::get_item_tags_array('core_reportbuilder', 'reportbuilder_report', $originalreport->get('id'));
+        $report = static::create_report($data, false);
+
+        // Duplicate columns.
+        self::duplicate_content(column::class, $originalreport->get('id'), $report->get('id'));
+
+        // Duplicate conditions/filters.
+        self::duplicate_content(filter::class, $originalreport->get('id'), $report->get('id'));
+
+        // Duplicate audiences.
+        if ($audiences) {
+            $mapping = [];
+            foreach (audience::get_records(['reportid' => $originalreport->get('id')]) as $originalpersistent) {
+                $data = $originalpersistent->to_record();
+                unset($data->id);
+                $data->reportid = $report->get('id');
+                $newpersistent = new audience(0, $data);
+                $newpersistent->create();
+                $mapping[$originalpersistent->get('id')] = $newpersistent->get('id');
+            }
+
+            // Duplicate schedules and map them to the new audience ids.
+            if ($schedules) {
+                foreach (schedule::get_records(['reportid' => $originalreport->get('id')]) as $originalpersistent) {
+                    $data = $originalpersistent->to_record();
+                    unset($data->id);
+                    $data->reportid = $report->get('id');
+
+                    // Map new audience ids with the old ones.
+                    $originalaudiences = json_decode($data->audiences, true);
+                    $newaudiences = [];
+                    foreach ($originalaudiences as $audienceid) {
+                        $newaudiences[] = $mapping[$audienceid];
+                    }
+                    $data->audiences = json_encode($newaudiences);
+
+                    $newpersistent = new schedule(0, $data);
+                    $newpersistent->create();
+                }
+            }
+        }
+
+        return $report;
+    }
+
+    /**
+     * Duplicate content from one persistent object to another.
+     *
+     * @param string $persistent
+     * @param int $originalid The ID of the original persistent object.
+     * @param int $newid The ID of the new persistent object.
+     */
+    private static function duplicate_content(string $persistent, int $originalid, int $newid): void {
+        foreach ($persistent::get_records(['reportid' => $originalid]) as $originalpersistent) {
+            $record = $originalpersistent->to_record();
+            unset($record->id);
+            $record->reportid = $newid;
+            $newpersistent = new $persistent(0, $record);
+            $newpersistent->create();
+        }
     }
 }

@@ -35,7 +35,7 @@ use core_user\reportbuilder\datasource\users;
  * @copyright   2021 Paul Holden <paulh@moodle.com>
  * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class report_test extends advanced_testcase {
+final class report_test extends advanced_testcase {
 
     /**
      * Test creation report
@@ -742,5 +742,90 @@ class report_test extends advanced_testcase {
         $this->expectException(invalid_parameter_exception::class);
         $this->expectExceptionMessage('Invalid filter');
         report::reorder_report_filter($report->get('id'), 42, 1);
+    }
+
+    /**
+     * Test duplicate report
+     */
+    public function test_duplicate_report(): void {
+        global $DB;
+        $this->resetAfterTest();
+
+        $user1 = $this->getDataGenerator()->create_user(['firstname' => 'Lionel']);
+
+        /** @var core_reportbuilder_generator $generator */
+        $generator = $this->getDataGenerator()->get_plugin_generator('core_reportbuilder');
+
+        // Create a custom report with 2 audiences and 1 schedule.
+        $report1 = $generator->create_report(['name' => 'Report 1', 'source' => users::class, 'default' => 0]);
+        $column = $generator->create_column([
+            'reportid' => $report1->get('id'),
+            'uniqueidentifier' => 'user:lastname',
+            'heading' => 'Tell me how to win your heart',
+            'sortenabled' => 1,
+        ]);
+        $filter = $generator->create_filter(['reportid' => $report1->get('id'), 'uniqueidentifier' => 'user:email']);
+        $audience1a = $generator->create_audience([
+            'reportid' => $report1->get('id'),
+            'classname' => \core_reportbuilder\reportbuilder\audience\allusers::class,
+            'configdata' => [],
+        ]);
+        $audience1b = $generator->create_audience([
+            'reportid' => $report1->get('id'),
+            'classname' => \core_reportbuilder\reportbuilder\audience\manual::class,
+            'configdata' => ['users' => [$user1->id]],
+        ]);
+        $generator->create_schedule([
+            'reportid' => $report1->get('id'),
+            'name' => 'My schedule',
+            'audiences' => json_encode([
+                $audience1a->get_persistent()->get('id'),
+                $audience1b->get_persistent()->get('id'),
+            ]),
+        ]);
+
+        // Duplicate report with audiences and schedules.
+        $newreport = report::duplicate_report($report1, 'Report 1 copy', true, true);
+        $this->assertNotEquals($report1->get('id'), $newreport->get('id'));
+        $this->assertEquals('Report 1 copy', $newreport->get('name'));
+        $this->assertEquals('core_user\reportbuilder\datasource\users', $newreport->get('source'));
+
+        $columns = $DB->get_records('reportbuilder_column', ['reportid' => $newreport->get('id')]);
+        $this->assertCount(1, $columns);
+        $this->assertNotEquals($column->get('id'), (reset($columns))->id);
+
+        $filters = $DB->get_records('reportbuilder_filter', ['reportid' => $newreport->get('id')]);
+        $this->assertCount(1, $filters);
+        $this->assertNotEquals($filter->get('id'), (reset($filters))->id);
+
+        $audiences = $DB->get_records('reportbuilder_audience', ['reportid' => $newreport->get('id')]);
+        $this->assertCount(2, $audiences);
+        $this->assertEqualsCanonicalizing(array_column($audiences, 'classname'),
+            ['core_reportbuilder\reportbuilder\audience\allusers', 'core_reportbuilder\reportbuilder\audience\manual']);
+
+        $schedules = $DB->get_records('reportbuilder_schedule', ['reportid' => $newreport->get('id')]);
+        $this->assertCount(1, $schedules);
+        $schedule = reset($schedules);
+        $this->assertEqualsCanonicalizing(array_column($audiences, 'id'), json_decode($schedule->audiences, true));
+
+        // Duplicate report with only with audiences.
+        $newreport2 = report::duplicate_report($report1, 'Report 1 copy #2', true, false);
+        $this->assertNotEquals($report1->get('id'), $newreport2->get('id'));
+        $this->assertEquals('Report 1 copy #2', $newreport2->get('name'));
+
+        $this->assertCount(1, $DB->get_records('reportbuilder_column', ['reportid' => $newreport2->get('id')]));
+        $this->assertCount(1, $DB->get_records('reportbuilder_filter', ['reportid' => $newreport2->get('id')]));
+        $this->assertCount(2, $DB->get_records('reportbuilder_audience', ['reportid' => $newreport2->get('id')]));
+        $this->assertEmpty($DB->get_records('reportbuilder_schedule', ['reportid' => $newreport2->get('id')]));
+
+        // Duplicate report with no audiences or schedules.
+        $newreport3 = report::duplicate_report($report1, 'Report 1 copy #3', false, false);
+        $this->assertNotEquals($report1->get('id'), $newreport3->get('id'));
+        $this->assertEquals('Report 1 copy #3', $newreport3->get('name'));
+
+        $this->assertCount(1, $DB->get_records('reportbuilder_column', ['reportid' => $newreport3->get('id')]));
+        $this->assertCount(1, $DB->get_records('reportbuilder_filter', ['reportid' => $newreport3->get('id')]));
+        $this->assertEmpty($DB->get_records('reportbuilder_audience', ['reportid' => $newreport3->get('id')]));
+        $this->assertEmpty($DB->get_records('reportbuilder_schedule', ['reportid' => $newreport3->get('id')]));
     }
 }
