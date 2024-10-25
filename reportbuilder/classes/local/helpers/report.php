@@ -66,6 +66,10 @@ class report {
                 $report->get_context(), $data->tags);
         }
 
+        // Report custom fields.
+        $data->id = $report->get('id');
+        \core_reportbuilder\customfield\report_handler::create()->instance_form_save($data, true);
+
         return $report;
     }
 
@@ -91,6 +95,9 @@ class report {
             core_tag_tag::set_item_tags('core_reportbuilder', 'reportbuilder_report', $report->get('id'),
                 $report->get_context(), $data->tags);
         }
+
+        // Report custom fields.
+        \core_reportbuilder\customfield\report_handler::create()->instance_form_save($data, false);
 
         return $report;
     }

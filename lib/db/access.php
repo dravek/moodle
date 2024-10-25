@@ -2738,6 +2738,14 @@ $capabilities = array(
         'archetypes' => [],
     ],
 
+    // Allow users to configure custom fields for custom reports.
+    'moodle/reportbuilder:configurecustomfields' => [
+        'captype' => 'write',
+        'riskbitmap' => RISK_PERSONAL,
+        'contextlevel' => CONTEXT_SYSTEM,
+        'archetypes' => [],
+    ],
+
     // Allow users to schedule reports as other users.
     'moodle/reportbuilder:scheduleviewas' => [
         'captype' => 'read',

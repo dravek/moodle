@@ -391,6 +391,7 @@ $string['rating:viewany'] = 'View total ratings that anyone received';
 $string['rating:viewall'] = 'View all raw ratings given by individuals';
 $string['reportbuilder:edit'] = 'Edit your own custom reports';
 $string['reportbuilder:editall'] = 'Edit all custom reports';
+$string['reportbuilder:configurecustomfields'] = 'Configure custom fields for custom reports';
 $string['reportbuilder:scheduleviewas'] = 'Schedule reports to be viewed as other users';
 $string['reportbuilder:view'] = 'View custom reports';
 $string['reportbuilder:viewall'] = 'View all custom reports';

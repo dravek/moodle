@@ -236,6 +236,7 @@ $string['renameaudience'] = 'Rename audience \'{$a}\'';
 $string['renamecolumn'] = 'Rename column \'{$a}\'';
 $string['renamefilter'] = 'Rename filter \'{$a}\'';
 $string['reportbuilder'] = 'Report builder';
+$string['reportbuildercustomfields'] = 'Custom report custom fields';
 $string['reportcreated'] = 'Report created';
 $string['reportdeleted'] = 'Report deleted';
 $string['reports'] = 'Reports';
