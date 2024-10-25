@@ -285,6 +285,12 @@ Feature: Manage custom reports
       | username  | firstname | lastname | email             | suspended |
       | user1     | User      | 1        | user1@example.com | 1         |
       | user2     | User      | 2        | user2@example.com | 0         |
+    And the following "custom field categories" exist:
+      | name   | component          | area   | itemid |
+      | Newcat | core_reportbuilder | report | 0      |
+    And the following "custom fields" exist:
+      | name        | category | type     | shortname | description | configdata |
+      | Myshorttext | Newcat   | text     | f1        | d1          |            |
     And the following "core_reportbuilder > Report" exists:
       | name    | My report                                |
       | source  | core_user\reportbuilder\datasource\users |
@@ -298,6 +304,9 @@ Feature: Manage custom reports
       | name   | My schedule |
     When I log in as "admin"
     And I navigate to "Reports > Report builder > Custom reports" in site administration
+    And I press "Edit report details" action in the "My report" report row
+    And I set the field "Myshorttext" in the "Edit report details" "dialogue" to "My short text"
+    And I click on "Save" "button" in the "Edit report details" "dialogue"
     And I press "Duplicate report" action in the "My report" report row
     And I set the following fields in the "Duplicate report" "dialogue" to these values:
       | Name                | My duplicated report |
@@ -317,6 +326,8 @@ Feature: Manage custom reports
     And "All users" "core_reportbuilder > Audience" should exist
     And I click on the "Schedules" dynamic tab
     And I should see "My schedule" in the "Report schedules" "table"
+    And I press "Edit details"
+    And the field "Myshorttext" matches value "My short text"
 
   Scenario: Delete custom report
     Given the following "core_reportbuilder > Reports" exist:

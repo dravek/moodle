@@ -23,6 +23,7 @@ use renderer_base;
 use core\external\persistent_exporter;
 use core_reportbuilder\datasource;
 use core_reportbuilder\manager;
+use core_reportbuilder\customfield\report_handler;
 use core_reportbuilder\local\models\report;
 use core_tag\external\{tag_item_exporter, util};
 use core_user\external\user_summary_exporter;
@@ -63,6 +64,15 @@ class custom_report_details_exporter extends persistent_exporter {
                 'type' => tag_item_exporter::read_properties_definition(),
                 'multiple' => true,
             ],
+            'customfields' => [
+                'type' => [
+                    'shortname' => ['type' => PARAM_TEXT, 'null' => NULL_ALLOWED],
+                    'name' => ['type' => PARAM_TEXT, 'null' => NULL_ALLOWED],
+                    'value' => ['type' => PARAM_TEXT, 'null' => NULL_ALLOWED],
+                ],
+                'optional' => true,
+                'multiple' => true,
+            ],
             'modifiedby' => ['type' => user_summary_exporter::read_properties_definition()],
         ];
     }
@@ -80,7 +90,38 @@ class custom_report_details_exporter extends persistent_exporter {
         return [
             'sourcename' => manager::report_source_exists($source, datasource::class) ? $source::get_name() : null,
             'tags' => util::get_item_tags('core_reportbuilder', 'reportbuilder_report', $this->persistent->get('id')),
+            'customfields' => $this->export_report_customfields(),
             'modifiedby' => (new user_summary_exporter($usermodified))->export($output),
         ];
+    }
+
+    /**
+     * Export report customfields
+     *
+     * @return array
+     */
+    private function export_report_customfields(): array {
+        global $PAGE;
+
+        /** @var report $report */
+        $report = $this->persistent;
+        $exportedcustomfields = [];
+        $handler = report_handler::create();
+        $output = $PAGE->get_renderer('core_customfield');
+
+        $customfields = $handler->export_instance_data($report->get('id'));
+        foreach ($customfields as $customfield) {
+            $fields = (array) $customfield->export_for_template($output);
+            // Add only those custom fields that have a value set.
+            if ($fields['hasvalue']) {
+                $exportedcustomfields[] = [
+                    'name' => $fields['name'],
+                    'value' => $fields['value'],
+                    'shortname' => $fields['shortname'],
+                ];
+            }
+        }
+
+        return $exportedcustomfields;
     }
 }
