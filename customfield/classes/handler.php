@@ -220,6 +220,7 @@ abstract class handler {
 
     /**
      * Validate that the given category belongs to this handler
+     * // TODO. OR shared space.
      *
      * @param category_controller $category
      * @return category_controller
@@ -468,11 +469,23 @@ abstract class handler {
      */
     public function get_categories_with_fields(): array {
         if ($this->categories === null) {
+            $sharedcategories = [];
             $this->categories = api::get_categories_with_fields($this->get_component(), $this->get_area(), $this->get_itemid());
+            // Avoid duplication when  we are in the shared custom fields page.
+            if ($this->get_component() !== 'core_customfield' && $this->get_area() !== 'shared') {
+                $sharedcategories = api::get_categories_with_fields('core_customfield', 'shared', 0);
+            }
+            $this->categories = array_merge($this->categories, $sharedcategories);
         }
         $handler = $this;
         array_walk($this->categories, function(category_controller $c) use ($handler) {
-            $c->set_handler($handler);
+            if ($c->get('area') === 'shared') {
+                $sharedhandler = \core_customfield\customfield\shared_handler::create();
+                $c->set_handler($sharedhandler);
+            } else {
+                // Set the handler for the category.
+                $c->set_handler($handler);
+            }
         });
         return $this->categories;
     }
@@ -732,11 +745,12 @@ abstract class handler {
      * @param stdClass $data data from the form
      */
     public function save_field_configuration(field_controller $field, stdClass $data) {
-        if ($field->get('id')) {
-            $field = $this->validate_field($field);
-        } else {
-            $this->validate_category($field->get_category());
-        }
+        // if ($field->get('id')) {
+        //     $field = $this->validate_field($field);
+        // } else {
+        //     $this->validate_category($field->get_category());
+        // }
+        // TODO.
         api::save_field_configuration($field, $data);
         $this->clear_configuration_cache();
     }

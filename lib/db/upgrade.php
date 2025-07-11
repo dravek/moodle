@@ -1915,5 +1915,55 @@ function xmldb_main_upgrade($oldversion) {
         upgrade_main_savepoint(true, 2025070600.01);
     }
 
+    if ($oldversion < 2025071100.01) {
+
+        // Define field shared to be added to customfield_category.
+        $table = new xmldb_table('customfield_category');
+        $field = new xmldb_field('shared', XMLDB_TYPE_INTEGER, '1', null, null, null, '0', 'contextid');
+
+        // Conditionally launch add field shared.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Main savepoint reached.
+        upgrade_main_savepoint(true, 2025071100.01);
+    }
+
+    if ($oldversion < 2025071100.02) {
+
+        // Define field component to be added to customfield_category.
+        $table = new xmldb_table('customfield_category');
+        $field = new xmldb_field('component', XMLDB_TYPE_CHAR, '100', null, XMLDB_NOTNULL, null, null, 'timemodified');
+
+        // Conditionally launch add field component.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Define field area to be added to customfield_category.
+        $table = new xmldb_table('customfield_category');
+        $field = new xmldb_field('area', XMLDB_TYPE_CHAR, '100', null, XMLDB_NOTNULL, null, null, 'component');
+
+        // Conditionally launch add field area.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // Define field itemid to be added to customfield_category.
+        $table = new xmldb_table('customfield_category');
+        $field = new xmldb_field('itemid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0', 'area');
+
+        // Conditionally launch add field itemid.
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        // TODO set correct component, are and itemid for existing categories.
+
+        // Main savepoint reached.
+        upgrade_main_savepoint(true, 2025071100.02);
+    }
+
     return true;
 }
