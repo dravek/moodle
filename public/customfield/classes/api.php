@@ -54,8 +54,8 @@ class api {
      *     If ($adddefaults): All fieldids are present, some data_controller objects may have 'id', some not.
      *     If (!$adddefaults): Only fieldids with data are present, all data_controller objects have 'id'.
      */
-    public static function get_instance_fields_data(array $fields, int $instanceid, bool $adddefaults = true): array {
-        return self::get_instances_fields_data($fields, [$instanceid], $adddefaults)[$instanceid];
+    public static function get_instance_fields_data(array $fields, int $instanceid, bool $adddefaults = true, string $component = '', string $area = ''): array {
+        return self::get_instances_fields_data($fields, [$instanceid], $adddefaults, $component, $area)[$instanceid];
     }
 
     /**
@@ -69,7 +69,7 @@ class api {
      *     If (!$adddefaults): All instanceids are present but only fieldids with data are present, all
      *         data_controller objects have 'id'.
      */
-    public static function get_instances_fields_data(array $fields, array $instanceids, bool $adddefaults = true): array {
+    public static function get_instances_fields_data(array $fields, array $instanceids, bool $adddefaults = true, string $component = '', string $area = ''): array {
         global $DB;
 
         // Create the results array where instances and fields order is the same as in the input arrays.
@@ -82,11 +82,21 @@ class api {
         // Retrieve all existing data.
         list($sqlfields, $params) = $DB->get_in_or_equal(array_keys($fields), SQL_PARAMS_NAMED, 'fld');
         list($sqlinstances, $iparams) = $DB->get_in_or_equal($instanceids, SQL_PARAMS_NAMED, 'ins');
+        if (!empty($component) && !empty($area)) {
+            // If component and area are provided, filter by them.
+            $params['component'] = $component;
+            $params['area'] = $area;
+            $sqlplugin = "AND d.component = :component AND d.area = :area AND d.itemid = :itemid";
+            $pluginparams['itemid'] = 0; // Default itemid, can be changed later if needed.
+        } else {
+            $sqlplugin = '';
+            $pluginparams = [];
+        }
         $sql = "SELECT d.*
                   FROM {customfield_field} f
                   JOIN {customfield_data} d ON (f.id = d.fieldid AND d.instanceid {$sqlinstances})
-                 WHERE f.id {$sqlfields}";
-        $fieldsdata = $DB->get_recordset_sql($sql, $params + $iparams);
+                 WHERE f.id {$sqlfields} $sqlplugin";
+        $fieldsdata = $DB->get_recordset_sql($sql, $params + $iparams + $pluginparams);
         foreach ($fieldsdata as $data) {
             $result[$data->instanceid][$data->fieldid] = data_controller::create(0, $data, $fields[$data->fieldid]);
         }

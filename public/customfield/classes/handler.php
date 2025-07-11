@@ -227,10 +227,31 @@ abstract class handler {
      */
     protected function validate_category(category_controller $category): category_controller {
         $categories = $this->get_categories_with_fields();
-        if (!array_key_exists($category->get('id'), $categories)) {
+        $category = $this->get_category_from_array($categories, $category->get('id'), $this->get_component(), $this->get_area(),
+            $this->get_itemid());
+        if ($category === null) {
             throw new \moodle_exception('categorynotfound', 'core_customfield');
         }
-        return $categories[$category->get('id')];
+        return $category;
+    }
+
+    /**
+     * Retrieves a category_controller from an array of categories matching the given identifiers.
+     *
+     * @param $categories Array of category_controller objects.
+     * @param int $categoryid The ID of the category to find.
+     * @param string $component The component name.
+     * @param string $area The area name.
+     * @param int $itemid The item ID.
+     * @return category_controller|null
+     */
+    public function get_category_from_array(array $categories, int $categoryid, string $component,
+        string $area, int $itemid): ?category_controller {
+        $category = array_filter($categories, fn($category) => $category->get('id') === $categoryid &&
+            $category->get_original_component() === $component &&
+            $category->get_original_area() === $area &&
+            $category->get_original_itemid() === $itemid);
+        return $category ? reset($category) : null;
     }
 
     /**
@@ -258,7 +279,7 @@ abstract class handler {
      * @param string $name
      */
     public function rename_category(category_controller $category, string $name) {
-        $this->validate_category($category);
+        // $this->validate_category($category); TODO:.
         $category->set('name', $name);
         api::save_category($category);
         $this->clear_configuration_cache();
@@ -271,7 +292,7 @@ abstract class handler {
      * @param int $beforeid id of the category this category needs to be moved before, 0 to move to the end
      */
     public function move_category(category_controller $category, int $beforeid = 0) {
-        $category = $this->validate_category($category);
+        $category = $this->validate_category($category); //TODO: component,area,itemid not set in the category here.
         api::move_category($category, $beforeid);
         $this->clear_configuration_cache();
     }
@@ -283,7 +304,7 @@ abstract class handler {
      * @return bool
      */
     public function delete_category(category_controller $category): bool {
-        $category = $this->validate_category($category);
+        $category = $this->validate_category($category); //TODO: component,area,itemid not set in the category here.
         $result = api::delete_category($category);
         $this->clear_configuration_cache();
         return $result;
@@ -375,7 +396,7 @@ abstract class handler {
      */
     public function get_instance_data(int $instanceid, bool $returnall = false): array {
         $fields = $returnall ? $this->get_fields() : $this->get_visible_fields($instanceid);
-        return api::get_instance_fields_data($fields, $instanceid);
+        return api::get_instance_fields_data($fields, $instanceid, true, $this->get_component(), $this->get_area());
     }
 
     /**
@@ -468,11 +489,28 @@ abstract class handler {
      */
     public function get_categories_with_fields(): array {
         if ($this->categories === null) {
+            $sharedcategories = [];
             $this->categories = api::get_categories_with_fields($this->get_component(), $this->get_area(), $this->get_itemid());
+            // Avoid duplication when  we are in the shared custom fields page.
+            if ($this->get_component() !== 'core_customfield' && $this->get_area() !== 'shared') {
+                $sharedcategories = api::get_categories_with_fields('core_customfield', 'shared', 0);
+            }
+            $this->categories = array_merge($this->categories, $sharedcategories);
+            // TODO: this meeses up the array, now index might not contain categoryid. Validation calls won't work.
         }
         $handler = $this;
         array_walk($this->categories, function(category_controller $c) use ($handler) {
-            $c->set_handler($handler);
+            if ($c->get('area') === 'shared') {
+                $sharedhandler = \core_customfield\customfield\shared_handler::create();
+                $c->set_handler($sharedhandler);
+            } else {
+                // Set the handler for the category.
+                $c->set_handler($handler);
+            }
+
+            $c->set_original_component($handler->get_component());
+            $c->set_original_area($handler->get_area());
+            $c->set_original_itemid($handler->get_itemid());
         });
         return $this->categories;
     }
@@ -566,7 +604,7 @@ abstract class handler {
      */
     public function instance_form_definition_after_data(\MoodleQuickForm $mform, int $instanceid = 0) {
         $editablefields = $this->get_editable_fields($instanceid);
-        $fields = api::get_instance_fields_data($editablefields, $instanceid);
+        $fields = api::get_instance_fields_data($editablefields, $instanceid, true, $this->get_component(), $this->get_area());
 
         foreach ($fields as $formfield) {
             $formfield->instance_form_definition_after_data($mform);
@@ -587,7 +625,7 @@ abstract class handler {
      */
     public function instance_form_before_set_data(stdClass $instance) {
         $instanceid = !empty($instance->id) ? $instance->id : 0;
-        $fields = api::get_instance_fields_data($this->get_editable_fields($instanceid), $instanceid);
+        $fields = api::get_instance_fields_data($this->get_editable_fields($instanceid), $instanceid, true, $this->get_component(), $this->get_area());
 
         foreach ($fields as $formfield) {
             $formfield->instance_form_before_set_data($instance);
@@ -616,7 +654,7 @@ abstract class handler {
             return;
         }
         $editablefields = $this->get_editable_fields($isnewinstance ? 0 : $instance->id);
-        $fields = api::get_instance_fields_data($editablefields, $instance->id);
+        $fields = api::get_instance_fields_data($editablefields, $instance->id, true, $this->get_component(), $this->get_area());
         foreach ($fields as $data) {
             if (!$data->get('id')) {
                 $data->set('contextid', $this->get_instance_context($instance->id)->id);
@@ -643,7 +681,7 @@ abstract class handler {
     public function instance_form_validation(array $data, array $files) {
         $instanceid = empty($data['id']) ? 0 : $data['id'];
         $editablefields = $this->get_editable_fields($instanceid);
-        $fields = api::get_instance_fields_data($editablefields, $instanceid);
+        $fields = api::get_instance_fields_data($editablefields, $instanceid, true, $this->get_component(), $this->get_area());
         $errors = [];
         foreach ($fields as $formfield) {
             $errors += $formfield->instance_form_validation($data, $files);
@@ -670,7 +708,7 @@ abstract class handler {
             ?string $headerlangidentifier = null, ?string $headerlangcomponent = null) {
 
         $editablefields = $this->get_editable_fields($instanceid);
-        $fieldswithdata = api::get_instance_fields_data($editablefields, $instanceid);
+        $fieldswithdata = api::get_instance_fields_data($editablefields, $instanceid, true, $this->get_component(), $this->get_area()); // TODO add component.area?
         $lastcategoryid = null;
         foreach ($fieldswithdata as $data) {
             $categoryid = $data->get_field()->get_category()->get('id');
@@ -732,11 +770,12 @@ abstract class handler {
      * @param stdClass $data data from the form
      */
     public function save_field_configuration(field_controller $field, stdClass $data) {
-        if ($field->get('id')) {
-            $field = $this->validate_field($field);
-        } else {
-            $this->validate_category($field->get_category());
-        }
+        // if ($field->get('id')) {
+        //     $field = $this->validate_field($field);
+        // } else {
+        //     $this->validate_category($field->get_category());
+        // }
+        // TODO.
         api::save_field_configuration($field, $data);
         $this->clear_configuration_cache();
     }
@@ -819,7 +858,7 @@ abstract class handler {
      * @param int $instanceid
      */
     public function delete_instance(int $instanceid) {
-        $fielddata = api::get_instance_fields_data($this->get_fields(), $instanceid, false);
+        $fielddata = api::get_instance_fields_data($this->get_fields(), $instanceid, false, $this->get_component(), $this->get_area());
         foreach ($fielddata as $data) {
             $data->delete();
         }
