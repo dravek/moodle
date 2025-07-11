@@ -17,6 +17,9 @@ $ADMIN->add('root', new admin_externalpage('upgradesettings', new lang_string('u
 $userfeedback = new admin_settingpage('userfeedback', new lang_string('feedbacksettings', 'admin'));
 $ADMIN->add('root', $userfeedback);
 
+$ADMIN->add('root', new admin_externalpage('sharedcustomfields', new lang_string('sharedcustomfields', 'core_customfield'),
+        new moodle_url("/customfield/customfield.php")));
+
 if ($hassiteconfig) {
     $optionalsubsystems = new admin_settingpage('optionalsubsystems', new lang_string('advancedfeatures', 'admin'));
     $ADMIN->add('root', $optionalsubsystems);
