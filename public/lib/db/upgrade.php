@@ -2157,6 +2157,32 @@ function xmldb_main_upgrade($oldversion) {
             ]);
         }
 
+        // Define table customfield_shared to be created.
+        $table = new xmldb_table('customfield_shared');
+
+        // Adding fields to table customfield_shared.
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE, null);
+        $table->add_field('categoryid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('component', XMLDB_TYPE_CHAR, '100', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('area', XMLDB_TYPE_CHAR, '100', null, XMLDB_NOTNULL, null, null);
+        $table->add_field('itemid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_field('usermodified', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_field('timecreated', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_field('timemodified', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+
+        // Adding keys to table customfield_shared.
+        $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+        $table->add_key('categoryid', XMLDB_KEY_FOREIGN, ['categoryid'], 'customfield_category', ['id']);
+        $table->add_key('usermodified', XMLDB_KEY_FOREIGN, ['usermodified'], 'user', ['id']);
+
+        // Adding indexes to table customfield_shared.
+        $table->add_index('categoryid-component-area-itemid', XMLDB_INDEX_UNIQUE, ['categoryid', 'component', 'area', 'itemid']);
+
+        // Conditionally launch create table for customfield_shared.
+        if (!$dbman->table_exists($table)) {
+            $dbman->create_table($table);
+        }
+
         // Main savepoint reached.
         upgrade_main_savepoint(true, 2025082900.01);
     }
