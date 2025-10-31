@@ -132,15 +132,17 @@ final class plugin_test extends \advanced_testcase {
         $this->assertFalse($form->is_validated());
 
         // Now with required field.
-        $submitdata['customfield_myfield2_editor'] = ['text' => 'Some text', 'format' => FORMAT_HTML];
+        $shortname1 = $this->get_generator()->create_shortname($this->cfcat, 'myfield1');
+        $shortname2 = $this->get_generator()->create_shortname($this->cfcat, 'myfield2');
+        $submitdata[$shortname2 . '_editor'] = ['text' => 'Some text', 'format' => FORMAT_HTML];
         core_customfield_test_instance_form::mock_submit($submitdata, []);
         $form = new core_customfield_test_instance_form('POST',
             ['handler' => $handler, 'instance' => $this->courses[1]]);
         $this->assertTrue($form->is_validated());
 
         $data = $form->get_data();
-        $this->assertNotEmpty($data->customfield_myfield1_editor);
-        $this->assertNotEmpty($data->customfield_myfield2_editor);
+        $this->assertNotEmpty($data->$shortname1 . '_editor');
+        $this->assertNotEmpty($data->$shortname2 . '_editor');
         $handler->instance_form_save($data);
     }
 
@@ -155,22 +157,24 @@ final class plugin_test extends \advanced_testcase {
         $this->setAdminUser();
 
         $handler = $this->cfcat->get_handler();
+        $shortname1 = $this->get_generator()->create_shortname($this->cfcat, 'myfield1');
+        $shortname2 = $this->get_generator()->create_shortname($this->cfcat, 'myfield2');
 
         // Set our custom field to a known value.
         $submitdata = (array) $this->courses[1] + [
-            'customfield_myfield1_editor' => ['text' => 'I can see it in your eyes', 'format' => FORMAT_HTML],
-            'customfield_myfield2_editor' => ['text' => 'I can see it in your smile', 'format' => FORMAT_HTML],
+            $shortname1 . '_editor' => ['text' => 'I can see it in your eyes', 'format' => FORMAT_HTML],
+            $shortname2 . '_editor' => ['text' => 'I can see it in your smile', 'format' => FORMAT_HTML],
         ];
 
         core_customfield_test_instance_form::mock_submit($submitdata, []);
         $form = new core_customfield_test_instance_form('post', ['handler' => $handler, 'instance' => $this->courses[1]]);
         $handler->instance_form_save($form->get_data());
 
-        $this->assertEquals($submitdata['customfield_myfield1_editor']['text'],
+        $this->assertEquals($submitdata[$shortname1 . '_editor']['text'],
             \core_customfield\data_controller::create($this->cfdata[1]->get('id'))->export_value());
 
         // Now empty our non-required field.
-        $submitdata['customfield_myfield1_editor']['text'] = '';
+        $submitdata[$shortname1 . '_editor']['text'] = '';
 
         core_customfield_test_instance_form::mock_submit($submitdata, []);
         $form = new core_customfield_test_instance_form('post', ['handler' => $handler, 'instance' => $this->courses[1]]);
@@ -226,24 +230,26 @@ final class plugin_test extends \advanced_testcase {
         ];
         $fs->create_file_from_string($filerecord, 'Some text contents');
 
+        $shortname1 = $this->get_generator()->create_shortname($this->cfcat, 'myfield1');
+        $shortname2 = $this->get_generator()->create_shortname($this->cfcat, 'myfield2');
         // Add the file to the custom field.
         $submitdata = (array) $this->courses[1];
-        $submitdata['customfield_myfield1_editor'] = [
+        $submitdata[$shortname1 . '_editor'] = [
             'text' => 'Here is a file: @@PLUGINFILE@@/mytextfile.txt',
             'format' => FORMAT_HTML,
             'itemid' => $filerecord['itemid'],
         ];
 
         // Set the required field and submit.
-        $submitdata['customfield_myfield2_editor'] = ['text' => 'Some text', 'format' => FORMAT_HTML];
+        $submitdata[$shortname2 . '_editor'] = ['text' => 'Some text', 'format' => FORMAT_HTML];
         core_customfield_test_instance_form::mock_submit($submitdata, []);
         $form = new core_customfield_test_instance_form('POST',
             ['handler' => $handler, 'instance' => $this->courses[1]]);
         $this->assertTrue($form->is_validated());
 
         $data = $form->get_data();
-        $this->assertNotEmpty($data->customfield_myfield1_editor);
-        $this->assertNotEmpty($data->customfield_myfield2_editor);
+        $this->assertNotEmpty($data->$shortname1 . '_editor');
+        $this->assertNotEmpty($data->$shortname2 . '_editor');
         $handler->instance_form_save($data);
 
         // Check if the draft file exists.

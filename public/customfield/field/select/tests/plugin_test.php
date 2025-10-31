@@ -129,15 +129,17 @@ final class plugin_test extends \advanced_testcase {
         $this->assertFalse($form->is_validated());
 
         // Now with required field.
-        $submitdata['customfield_myfield2'] = 1;
+        $shortname1 = $this->get_generator()->create_shortname($this->cfcat, 'myfield1');
+        $shortname2 = $this->get_generator()->create_shortname($this->cfcat, 'myfield2');
+        $submitdata[$shortname2] = 1;
         core_customfield_test_instance_form::mock_submit($submitdata, []);
         $form = new core_customfield_test_instance_form('POST',
             ['handler' => $handler, 'instance' => $this->courses[1]]);
         $this->assertTrue($form->is_validated());
 
         $data = $form->get_data();
-        $this->assertNotEmpty($data->customfield_myfield1);
-        $this->assertNotEmpty($data->customfield_myfield2);
+        $this->assertNotEmpty($data->$shortname1);
+        $this->assertNotEmpty($data->$shortname2);
         $handler->instance_form_save($data);
     }
 

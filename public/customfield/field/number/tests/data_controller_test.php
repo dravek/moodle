@@ -78,15 +78,16 @@ final class data_controller_test extends advanced_testcase {
         $data = \core_customfield\data_controller::create(0, null, $field);
 
         // Less than minimum value.
-        $formdata = array_merge((array) $course, ['customfield_' . $field->get('shortname') => 2]);
+        $shortname = $generator->create_shortname($category,  $field->get('shortname'));
+        $formdata = array_merge((array) $course, [$shortname => 2]);
         $this->assertEquals([
-            'customfield_' . $field->get('shortname') => 'Value must be greater than or equal to 5',
+            $shortname => 'Value must be greater than or equal to 5',
         ], $data->instance_form_validation($formdata, []));
 
         // Greater than maximum value.
-        $formdata = array_merge((array) $course, ['customfield_' . $field->get('shortname') => 12]);
+        $formdata = array_merge((array) $course, [$shortname => 12]);
         $this->assertEquals([
-            'customfield_' . $field->get('shortname') => 'Value must be less than or equal to 10',
+            $shortname => 'Value must be less than or equal to 10',
         ], $data->instance_form_validation($formdata, []));
     }
 
@@ -109,14 +110,15 @@ final class data_controller_test extends advanced_testcase {
         $category = $generator->create_category();
         $field = $generator->create_field(['categoryid' => $category->get('id'), 'type' => 'number']);
 
-        $formdata = array_merge((array) $course, ['customfield_' . $field->get('shortname') => 42]);
+        $shortname = $generator->create_shortname($category,  $field->get('shortname'));
+        $formdata = array_merge((array) $course, [$shortname => 42]);
         core_customfield_test_instance_form::mock_submit($formdata);
 
         $form = new core_customfield_test_instance_form('POST', ['handler' => $category->get_handler(), 'instance' => $course]);
         $this->assertTrue($form->is_validated());
 
         $formsubmission = $form->get_data();
-        $this->assertEquals(42.0, $formsubmission->{'customfield_' . $field->get('shortname')});
+        $this->assertEquals(42.0, $formsubmission->{$shortname});
         $category->get_handler()->instance_form_save($formsubmission);
     }
 

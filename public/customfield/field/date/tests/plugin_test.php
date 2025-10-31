@@ -122,15 +122,17 @@ final class plugin_test extends \advanced_testcase {
         $this->assertFalse($form->is_validated());
 
         // Now with required field.
-        $submitdata['customfield_myfield2'] = time();
+        $shortname2 = $this->get_generator()->create_shortname($this->cfcat, 'myfield2');
+        $submitdata[$shortname2] = time();
         core_customfield_test_instance_form::mock_submit($submitdata, []);
         $form = new core_customfield_test_instance_form('POST',
             ['handler' => $handler, 'instance' => $this->courses[1]]);
         $this->assertTrue($form->is_validated());
 
         $data = $form->get_data();
-        $this->assertEmpty($data->customfield_myfield1);
-        $this->assertNotEmpty($data->customfield_myfield2);
+        $shortname1 = $this->get_generator()->create_shortname($this->cfcat, 'myfield1');
+        $this->assertEmpty($data->$shortname1);
+        $this->assertNotEmpty($data->$shortname2);
         $handler->instance_form_save($data);
     }
 
@@ -144,11 +146,11 @@ final class plugin_test extends \advanced_testcase {
         $data = data_controller::create(0, null, $this->cfields[2]);
 
         // Submit with date less than mindate.
-        $submitdata['customfield_myfield2'] = 915148800;
+        $submitdata[$this->get_generator()->create_shortname($this->cfcat, 'myfield2')] = 915148800;
         $this->assertNotEmpty($data->instance_form_validation($submitdata, []));
 
         // Submit with date more than maxdate.
-        $submitdata['customfield_myfield2'] = 1893557000;
+        $submitdata[$this->get_generator()->create_shortname($this->cfcat, 'myfield2')] = 1893557000;
         $this->assertNotEmpty($data->instance_form_validation($submitdata, []));
     }
 

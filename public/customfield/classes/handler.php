@@ -776,7 +776,7 @@ abstract class handler {
                 $value = file_rewrite_pluginfile_urls($field->description, 'pluginfile.php',
                     $context->id, 'core_customfield', 'description', $field->id);
                 $value = format_text($value, $field->descriptionformat, ['context' => $context]);
-                $mform->addElement('static', 'customfield_' . $field->shortname . '_static', '', $value);
+                $mform->addElement('static', 'customfield_' . $categoryid . '_'. $field->shortname . '_static', '', $value);
             }
         }
     }

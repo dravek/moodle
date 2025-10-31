@@ -176,4 +176,15 @@ class core_customfield_generator extends component_generator_base {
         $data->instance_form_save($record);
         return $data;
     }
+
+    /**
+     * Create shortname for form element.
+     *
+     * @param category_controller $category
+     * @param string $name
+     * @return string
+     */
+    public function create_shortname(category_controller $category, string $name): string {
+        return 'customfield_' . $category->get('id') . '_' . $name;
+    }
 }

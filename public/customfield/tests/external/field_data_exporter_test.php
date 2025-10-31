@@ -49,8 +49,8 @@ final class field_data_exporter_test extends advanced_testcase {
             'shortname' => 'myfield',
             'type' => 'number',
         ]);
-
-        $courseone = $this->getDataGenerator()->create_course(['customfield_myfield' => 42]);
+        $shortname = $generator->create_shortname($category, 'myfield');
+        $courseone = $this->getDataGenerator()->create_course([$shortname => 42]);
         $coursetwo = $this->getDataGenerator()->create_course();
 
         $output = $PAGE->get_renderer('core_customfield');
